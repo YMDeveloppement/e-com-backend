@@ -1,0 +1,266 @@
+services:
+  # ========================================
+  # API GATEWAY - NGINX
+  # ========================================
+
+  gateway:
+    image: nginx:alpine
+    container_name: ecom-gateway
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # - ./e-com-backend:/var/www
+
+
+    depends_on:
+      - core
+      - stock
+      - delivery
+
+    networks:
+      - app-network
+
+  # ========================================
+  # FRONTEND - React
+  # ========================================
+
+  frontend:
+    build:
+      context: ./e-com-frontend
+    container_name: ecom-frontend
+    expose:
+      - "80"
+    ports:
+      - "5373:80"
+    volumes:
+      - ./e-com-frontend:/app
+      - ./e-com-frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - app-network
+  # ========================================
+  # CORE SERVICE - LARAVEL 10
+  # ========================================
+
+  core:
+    build:
+      context: ./e-com-backend
+
+    container_name: ecom-core
+
+    working_dir: /var/www
+
+    ports:
+      - "90:80"
+    expose:
+      - "80"
+
+
+    volumes:
+      - ./e-com-backend:/var/www
+      - /var/www/vendor
+      - core-storage:/var/www/storage
+      - core-cache:/var/www/bootstrap/cache
+
+    environment:
+      DB_HOST: core-db
+      DB_PORT: 3306
+      DB_DATABASE: core_db
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+
+    depends_on:
+      - core-db
+      - rabbitmq
+
+    networks:
+      - app-network
+
+  # ========================================
+  # STOCK SERVICE - LARAVEL 13
+  # ========================================
+
+  stock:
+    build:
+      context: ./stock-service
+
+    container_name: ecom-stock
+
+    working_dir: /var/www
+
+    expose:
+      - "80"
+
+    volumes:
+      - ./stock-service:/var/www
+      - /var/www/vendor
+      - stock-storage:/var/www/storage
+      - stock-cache:/var/www/bootstrap/cache
+
+    environment:
+      DB_HOST: stock-db
+      DB_PORT: 3306
+      DB_DATABASE: stock_db
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+
+    depends_on:
+      - stock-db
+      - rabbitmq
+
+    networks:
+      - app-network
+
+  # ========================================
+  # DELIVERY SERVICE - LARAVEL 13
+  # ========================================
+
+  delivery:
+    build:
+      context: ./delivery-service
+
+    container_name: ecom-delivery
+
+    working_dir: /var/www
+
+    expose:
+      - "80"
+
+    volumes:
+      - ./delivery-service:/var/www
+      - /var/www/vendor
+      - delivery-storage:/var/www/storage
+      - delivery-cache:/var/www/bootstrap/cache
+
+    environment:
+      DB_HOST: delivery-db
+      DB_PORT: 3306
+      DB_DATABASE: delivery_db
+      DB_USERNAME: root
+      DB_PASSWORD: secret
+
+    depends_on:
+      - delivery-db
+      - rabbitmq
+
+    networks:
+      - app-network
+
+  # ========================================
+  # CORE DATABASE
+  # ========================================
+
+  core-db:
+    image: mysql:8.0
+    container_name: ecom-core-db
+
+    environment:
+      MYSQL_DATABASE: core_db
+      MYSQL_ROOT_PASSWORD: secret
+
+    volumes:
+      - core-db-data:/var/lib/mysql
+      - ./databases/core.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    networks:
+      - app-network
+
+  # ========================================
+  # STOCK DATABASE
+  # ========================================
+
+  stock-db:
+    image: mysql:8.0
+    container_name: ecom-stock-db
+
+    environment:
+      MYSQL_DATABASE: stock_db
+      MYSQL_ROOT_PASSWORD: secret
+
+    volumes:
+      - stock-db-data:/var/lib/mysql
+      - ./databases/stock.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    networks:
+      - app-network
+
+  # ========================================
+  # DELIVERY DATABASE
+  # ========================================
+
+  delivery-db:
+    image: mysql:8.0
+    container_name: ecom-delivery-db
+
+    environment:
+      MYSQL_DATABASE: delivery_db
+      MYSQL_ROOT_PASSWORD: secret
+
+    volumes:
+      - delivery-db-data:/var/lib/mysql
+      - ./databases/delivery.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    networks:
+      - app-network
+
+  # ========================================
+  # RABBITMQ
+  # ========================================
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: ecom-rabbitmq
+
+    ports:
+      - "15672:15672"
+
+    networks:
+      - app-network
+
+  # ========================================
+  # PHPMYADMIN
+  # ========================================
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: ecom-phpmyadmin
+
+    ports:
+      - "8080:80"
+
+    environment:
+      PMA_HOSTS: core-db,stock-db,delivery-db
+      PMA_ARBITRARY: 1
+
+    depends_on:
+      - core-db
+      - stock-db
+      - delivery-db
+
+    networks:
+      - app-network
+
+# ========================================
+# VOLUMES
+# ========================================
+
+volumes:
+  core-db-data:
+  stock-db-data:
+  delivery-db-data:
+  core-storage:
+  core-cache:
+  delivery-storage:
+  delivery-cache:
+  stock-storage:
+  stock-cache:
+
+# ========================================
+# NETWORK
+# ========================================
+
+networks:
+  app-network:
+    driver: bridge
