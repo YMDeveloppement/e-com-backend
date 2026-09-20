@@ -22,6 +22,9 @@ use Illuminate\Support\Facades\Http;
 
 // Route::post('/register', [\App\Http\Controllers\AuthController::class, 'register']);
 
+Route::get('/ttttt', function(){
+return response(['sdfsqdf'=> hash::make('12345678')]);     ;
+});
 
 Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
 Route::post('/refresh', [\App\Http\Controllers\AuthController::class, 'refresh']);

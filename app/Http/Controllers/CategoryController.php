@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use App\Http\Resources\ProductResource;
+use Illuminate\Support\Facades\DB;
 
 class CategoryController extends Controller
 {
@@ -22,9 +23,11 @@ class CategoryController extends Controller
      */
     public function index()
     {
-
+    
         $data = [];
-        $categories = Category::whereNull('parent_id')->get();
+        // return response()->json(DB::scalar('SELECT COUNT(*) FROM categories'));
+        $categories = Category::all();
+
         foreach ($categories as $category) {
             $sub_categories = Category::where('parent_id', $category->id)->get();
             if (!$sub_categories)

@@ -32,8 +32,9 @@ class AuthController extends Controller
         //     'token_type' => 'bearer',
         //     'expires_in' => JWTAuth::factory()->getTTL() * 60
         // ]);
+        // dd(["sdsd" =>auth()->attempt($credentials)]);
 
-        if (! $token = auth()->attempt($credentials)) {
+        if (!$token = auth()->attempt($credentials)) {
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 

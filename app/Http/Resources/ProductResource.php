@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class ProductResource extends JsonResource
 {
@@ -20,7 +21,7 @@ class ProductResource extends JsonResource
             "name"=> $this->name,
             "description"=> $this->description,
             "short_desc"=> $this->short_desc,
-            "image"=> $this->image_url,
+            "image"=> Storage::url($this->image_url),
             "price"=> $this->base_price,
             "compare_price"=> $this->compare_price,
             "base_price"=> $this->base_price,
